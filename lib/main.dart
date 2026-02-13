@@ -6,15 +6,19 @@ void main() {
 }
 
 // ==========================================
-// 1. MOCK DATABASE & MODELS
+// 1. DATA MODELS
 // ==========================================
 
+enum UserRole { Admin, PIC, Member }
+
 class User {
-  final String username;
-  final String email;
-  final String password;
-  final String role; // 'Admin', 'PIC', 'Member'
-  User({required this.username, required this.email, required this.password, required this.role});
+  String id;
+  String username;
+  String email;
+  String password;
+  UserRole role;
+
+  User({required this.id, required this.username, required this.email, required this.password, required this.role});
 }
 
 class EventModel {
@@ -22,105 +26,92 @@ class EventModel {
   String title;
   String description;
   String status;
-  DateTime date;
+  DateTime date; 
   String location;
-  String pic;
+  String picEmail; 
+  List<String> teamEmails; 
+  List<String> attachments; 
 
-  EventModel(this.id, this.title, this.description, this.status, this.date, this.location, this.pic);
+  EventModel(this.id, this.title, this.description, this.status, this.date, this.location, this.picEmail, this.teamEmails, {this.attachments = const []});
 }
 
 class RoadmapTask {
   String id;
+  String projectId;
   String title;
   String description;
-  String status;
+  String status; // 'To Do', 'In Progress', 'Done'
   DateTime start;
   DateTime end;
-  double progress;
+  double progress; // 0.0 - 1.0
 
-  RoadmapTask({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.status,
-    required this.start,
-    required this.end,
-    this.progress = 0.0,
-  });
-}
-
-class MockDatabase {
-  // DATA USER
-  static final List<User> _users = [
-    User(username: "Super Admin", email: "admin@proofit.com", password: "admin123", role: "Admin"),
-    User(username: "Siti Manager", email: "pic@test.com", password: "123", role: "PIC"),
-    User(username: "Andi Staff", email: "member@test.com", password: "123", role: "Member"),
-    User(username: "Budi Senior", email: "budi@test.com", password: "123", role: "Member"),
-  ];
-
-  // DATA PROJECT / EVENT
-  static final List<EventModel> _events = [
-    EventModel("1", "Grand Launching Product", "Peluncuran produk baru Proof It!", "Upcoming", DateTime.now().add(const Duration(days: 5)), "Grand Ballroom", "Siti Manager"),
-    EventModel("2", "Internal Workshop", "Pelatihan manajemen.", "On Progress", DateTime.now(), "Meeting Room 1", "Budi Senior"),
-  ];
-
-  // DATA ROADMAP
-  static final List<RoadmapTask> _roadmapTasks = [
-    RoadmapTask(id: "1", title: "Build Mobile App", description: "Fase development flutter.", status: "In Progress", start: DateTime(2023, 10, 1), end: DateTime(2023, 11, 15), progress: 0.5),
-    RoadmapTask(id: "2", title: "Booking feature", description: "Fitur booking venue.", status: "To Do", start: DateTime(2023, 10, 20), end: DateTime(2023, 11, 25), progress: 0.0),
-  ];
-
-  // AUTH
-  static User? login(String email, String password) {
-    try {
-      return _users.firstWhere((u) => u.email == email && u.password == password);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  static void register(String username, String email, String password, String role) {
-    _users.add(User(username: username, email: email, password: password, role: role));
-  }
-
-  // EVENT / PROJECT CRUD
-  static List<EventModel> getEvents() => _events;
-  
-  static void addEvent(EventModel event) {
-    _events.add(event);
-  }
-
-  static void deleteEvent(String id) {
-    _events.removeWhere((e) => e.id == id);
-  }
-
-  static void updateEvent(String id, EventModel newEvent) {
-    int index = _events.indexWhere((e) => e.id == id);
-    if(index != -1) _events[index] = newEvent;
-  }
-
-  // ROADMAP CRUD
-  static List<RoadmapTask> getRoadmap() => _roadmapTasks;
-  static void addTask(RoadmapTask task) => _roadmapTasks.add(task);
-  static void updateTaskStatus(String id, String status, double progress) {
-    final index = _roadmapTasks.indexWhere((t) => t.id == id);
-    if (index != -1) {
-      _roadmapTasks[index].status = status;
-      _roadmapTasks[index].progress = progress;
-    }
-  }
-  static void deleteTask(String id) => _roadmapTasks.removeWhere((t) => t.id == id);
-
-  // USER LIST
-  static List<User> getUsers() => _users;
-}
-
-class AuthSession {
-  static User? currentUser;
+  RoadmapTask({required this.id, required this.projectId, required this.title, required this.description, required this.status, required this.start, required this.end, this.progress = 0.0});
 }
 
 // ==========================================
-// 2. MAIN APP & THEME
+// 2. MOCK DATABASE
+// ==========================================
+
+class MockDatabase {
+  // USERS
+  static final List<User> _users = [
+    User(id: "1", username: "Super Admin", email: "admin@proofit.com", password: "123", role: UserRole.Admin),
+    User(id: "2", username: "Siti Manager", email: "pic@proofit.com", password: "123", role: UserRole.PIC),
+    User(id: "3", username: "Andi Staff", email: "andi@proofit.com", password: "123", role: UserRole.Member),
+    User(id: "4", username: "Budi Senior", email: "budi@proofit.com", password: "123", role: UserRole.Member),
+  ];
+
+  // PROJECTS
+  static final List<EventModel> _events = [
+    EventModel("1", "Grand Launching App", "Event besar peluncuran.", "Upcoming", DateTime.now().add(const Duration(days: 30)), "Grand Ballroom", "pic@proofit.com", ["pic@proofit.com", "andi@proofit.com"], attachments: ["venue.jpg"]),
+    EventModel("2", "Internal Training", "Pelatihan React Native.", "On Progress", DateTime.now().add(const Duration(days: 5)), "Meeting Room A", "pic@proofit.com", ["pic@proofit.com", "budi@proofit.com"]),
+  ];
+
+  // ROADMAP TASKS
+  static final List<RoadmapTask> _tasks = [
+    RoadmapTask(id: "1", projectId: "1", title: "Sewa Tempat", description: "Bayar DP", status: "Done", start: DateTime.now().subtract(const Duration(days: 10)), end: DateTime.now().subtract(const Duration(days: 5)), progress: 1.0),
+    RoadmapTask(id: "2", projectId: "1", title: "Cetak Banner", description: "Vendor X", status: "In Progress", start: DateTime.now().subtract(const Duration(days: 2)), end: DateTime.now().add(const Duration(days: 5)), progress: 0.6),
+    RoadmapTask(id: "3", projectId: "2", title: "Siapkan Modul", description: "PDF Modul", status: "To Do", start: DateTime.now(), end: DateTime.now().add(const Duration(days: 3)), progress: 0.0),
+    RoadmapTask(id: "4", projectId: "2", title: "Kontrak Trainer", description: "Harus sign kemarin", status: "In Progress", start: DateTime.now().subtract(const Duration(days: 15)), end: DateTime.now().subtract(const Duration(days: 1)), progress: 0.2),
+  ];
+
+  // --- METHODS ---
+  static User? login(String email, String pass) {
+    try { return _users.firstWhere((u) => u.email == email && u.password == pass); } catch (e) { return null; }
+  }
+
+  static List<EventModel> getEvents() => _events;
+  static EventModel? getEventById(String id) { try { return _events.firstWhere((e)=>e.id == id); } catch(e){ return null; }}
+  
+  static List<RoadmapTask> getAllTasks() => _tasks;
+  static List<RoadmapTask> getTasksByProject(String pid) => _tasks.where((t) => t.projectId == pid).toList();
+
+  static List<User> getUsers() => _users;
+  static User? getUserByEmail(String email) { try { return _users.firstWhere((u)=>u.email == email); } catch(e){ return null; }}
+
+  // CRUD
+  static void addEvent(EventModel e) => _events.add(e);
+  static void updateEvent(String id, EventModel newEvent) { int i = _events.indexWhere((e)=>e.id==id); if(i!=-1) _events[i] = newEvent; }
+  static void deleteEvent(String id) { _events.removeWhere((e)=>e.id==id); _tasks.removeWhere((t)=>t.projectId==id); }
+
+  static void addTask(RoadmapTask t) => _tasks.add(t);
+  
+  // UPDATE TASK FULL (For Edit Feature)
+  static void updateTask(RoadmapTask t) { 
+    int i = _tasks.indexWhere((x)=>x.id==t.id); 
+    if(i!=-1) _tasks[i] = t; 
+  }
+  
+  static void deleteTask(String id) => _tasks.removeWhere((t)=>t.id==id);
+
+  static void addUser(User u) => _users.add(u);
+  static void updateUser(User u) { int i = _users.indexWhere((x)=>x.id==u.id); if(i!=-1) _users[i] = u; }
+}
+
+class AuthSession { static User? currentUser; }
+
+// ==========================================
+// 3. MAIN APP
 // ==========================================
 
 class ProofItApp extends StatelessWidget {
@@ -132,15 +123,10 @@ class ProofItApp extends StatelessWidget {
       title: 'Proof It!',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
+        primarySwatch: Colors.indigo,
         scaffoldBackgroundColor: const Color(0xFFF4F5F7),
-        useMaterial3: true,
         fontFamily: 'Segoe UI',
-        cardTheme: CardThemeData(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          color: Colors.white,
-        )
+        useMaterial3: true,
       ),
       home: const LoginScreen(),
     );
@@ -148,7 +134,7 @@ class ProofItApp extends StatelessWidget {
 }
 
 // ==========================================
-// 3. LOGIN SCREEN
+// 4. LOGIN SCREEN
 // ==========================================
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -157,41 +143,42 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passController = TextEditingController();
-  String _errorMessage = "";
+  final _email = TextEditingController();
+  final _pass = TextEditingController();
 
-  void _handleLogin() {
-    final user = MockDatabase.login(_emailController.text, _passController.text);
+  void _login() {
+    final user = MockDatabase.login(_email.text, _pass.text);
     if (user != null) {
       AuthSession.currentUser = user;
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainLayout()));
     } else {
-      setState(() => _errorMessage = "Email atau Password salah!");
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Login Gagal! Coba: admin@proofit.com / 123")));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Center(
         child: Container(
-          width: 400,
+          width: 350,
           padding: const EdgeInsets.all(30),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [const BoxShadow(color: Colors.black12, blurRadius: 10)]),
+          decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20)]),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.verified_user, size: 60, color: Colors.deepPurple),
+              const Icon(Icons.verified, size: 60, color: Colors.indigo),
               const SizedBox(height: 20),
-              const Text("Login Proof It!", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 30),
-              TextField(controller: _emailController, decoration: const InputDecoration(labelText: "Email", border: OutlineInputBorder(), prefixIcon: Icon(Icons.email))),
+              const Text("Proof It!", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              const Text("Project Management Simplified", style: TextStyle(color: Colors.grey)),
+              const SizedBox(height: 40),
+              TextField(controller: _email, decoration: const InputDecoration(labelText: "Email", prefixIcon: Icon(Icons.email), border: OutlineInputBorder())),
               const SizedBox(height: 15),
-              TextField(controller: _passController, obscureText: true, decoration: const InputDecoration(labelText: "Password", border: OutlineInputBorder(), prefixIcon: Icon(Icons.lock))),
-              if (_errorMessage.isNotEmpty) ...[const SizedBox(height: 10), Text(_errorMessage, style: const TextStyle(color: Colors.red))],
-              const SizedBox(height: 20),
-              SizedBox(width: double.infinity, height: 50, child: ElevatedButton(onPressed: _handleLogin, style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white), child: const Text("MASUK"))),
+              TextField(controller: _pass, obscureText: true, decoration: const InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock), border: OutlineInputBorder())),
+              const SizedBox(height: 25),
+              SizedBox(width: double.infinity, height: 50, child: ElevatedButton(onPressed: _login, style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white), child: const Text("LOGIN"))),
             ],
           ),
         ),
@@ -201,369 +188,278 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 // ==========================================
-// 4. MAIN LAYOUT
+// 5. MAIN LAYOUT
 // ==========================================
 
 class MainLayout extends StatefulWidget {
-  const MainLayout({super.key});
+  final int initialIndex;
+  const MainLayout({super.key, this.initialIndex = 0});
   @override
   State<MainLayout> createState() => _MainLayoutState();
 }
 
 class _MainLayoutState extends State<MainLayout> {
-  int _selectedIndex = 0; 
+  late int _idx;
+
+  @override
+  void initState() {
+    super.initState();
+    _idx = widget.initialIndex;
+  }
 
   @override
   Widget build(BuildContext context) {
     final user = AuthSession.currentUser!;
-
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
-        titleSpacing: 0,
-        toolbarHeight: 65,
-        title: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Row(
-            children: [
-              const Icon(Icons.verified_user, color: Colors.deepPurple, size: 28),
-              const SizedBox(width: 8),
-              const Text("Proof It!", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18)),
-              const SizedBox(width: 40),
-              if (MediaQuery.of(context).size.width > 700) ...[
-                _navButton("Dashboard", 0),
-                _navButton("Roadmap", 1),
-                if (user.role == 'PIC' || user.role == 'Admin') _navButton("Team", 2),
+      body: Column(
+        children: [
+          // TOP BAR
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            color: Colors.white,
+            child: Row(
+              children: [
+                const Icon(Icons.verified, color: Colors.indigo),
+                const SizedBox(width: 10),
+                const Text("Proof It!", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.indigo)),
+                const Spacer(),
+                IconButton(onPressed: (){}, icon: const Icon(Icons.notifications_none)),
+                const SizedBox(width: 10),
+                CircleAvatar(backgroundColor: Colors.indigo, radius: 16, child: Text(user.username[0], style: const TextStyle(color: Colors.white))),
+                const SizedBox(width: 10),
+                PopupMenuButton(
+                  child: Row(children: [Text(user.username, style: const TextStyle(fontWeight: FontWeight.bold)), const Icon(Icons.arrow_drop_down)]),
+                  itemBuilder: (c) => [
+                    PopupMenuItem(child: const Text("Logout"), onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()))),
+                  ]
+                )
               ],
-            ],
+            ),
           ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              showMenu(
-                context: context, 
-                position: const RelativeRect.fromLTRB(100, 80, 0, 0),
-                items: [
-                  const PopupMenuItem(child: ListTile(leading: Icon(Icons.info, color: Colors.blue), title: Text("New Task Assigned"), subtitle: Text("Just now"))),
-                ]
-              );
-            }, 
-            icon: const Icon(Icons.notifications_outlined, color: Colors.grey)
-          ),
-          const SizedBox(width: 15),
-          Row(
-            children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text("Hi, ${user.username}", style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 14)),
-                  Text(user.role, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
-                ],
-              ),
-              const SizedBox(width: 10),
-              CircleAvatar(backgroundColor: Colors.deepPurple, radius: 16, child: Text(user.username[0].toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 14))),
-              const SizedBox(width: 10),
-              PopupMenuButton(
-                icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black),
-                onSelected: (val) {
-                  if (val == 'logout') {
-                    AuthSession.currentUser = null;
-                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-                  }
-                },
-                itemBuilder: (context) => [const PopupMenuItem(value: 'logout', child: Text("Logout", style: TextStyle(color: Colors.red)))],
-              ),
-              const SizedBox(width: 20),
-            ],
+          
+          // CONTENT
+          Expanded(
+            child: IndexedStack(
+              index: _idx,
+              children: const [
+                DashboardPage(),
+                RoadmapPage(),
+                TeamPage(),
+              ],
+            ),
           )
         ],
       ),
-      body: _buildBody(),
-    );
-  }
-
-  Widget _buildBody() {
-    switch (_selectedIndex) {
-      case 0: return DashboardPage(user: AuthSession.currentUser!);
-      case 1: return const RoadmapPage();
-      case 2: return const TeamPage();
-      default: return const Center(child: Text("Halaman dalam pengembangan"));
-    }
-  }
-
-  Widget _navButton(String title, int index) {
-    bool isActive = _selectedIndex == index;
-    return InkWell(
-      onTap: () => setState(() => _selectedIndex = index),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        decoration: BoxDecoration(border: isActive ? const Border(bottom: BorderSide(color: Colors.deepPurple, width: 3)) : null),
-        child: Text(title, style: TextStyle(color: isActive ? Colors.deepPurple : const Color(0xFF42526E), fontWeight: isActive ? FontWeight.w600 : FontWeight.w500)),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _idx,
+        onDestinationSelected: (i) => setState(() => _idx = i),
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.dashboard), label: "Dashboard"),
+          NavigationDestination(icon: Icon(Icons.calendar_view_week), label: "Roadmap"),
+          NavigationDestination(icon: Icon(Icons.people), label: "Team"),
+        ],
       ),
     );
   }
 }
 
 // ==========================================
-// 5. DASHBOARD PAGE
+// 6. DASHBOARD PAGE
 // ==========================================
 
 class DashboardPage extends StatefulWidget {
-  final User user;
-  const DashboardPage({super.key, required this.user});
-
+  const DashboardPage({super.key});
   @override
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  
   void _refresh() => setState(() {});
 
-  void _showCreateProjectDialog() {
-    final titleCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    final locCtrl = TextEditingController();
-    final picCtrl = TextEditingController();
-    
-    DateTime selectedDate = DateTime.now().add(const Duration(days: 7));
+  void _showAddProjectDialog() {
+    final title = TextEditingController();
+    final desc = TextEditingController();
+    final loc = TextEditingController();
+    DateTime date = DateTime.now().add(const Duration(days: 7));
     String status = "Upcoming";
 
-    showDialog(
-      context: context, 
-      builder: (context) {
-        return StatefulBuilder( 
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text("Create New Project"),
-              content: SizedBox(
-                width: 500,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: "Project Title", icon: Icon(Icons.title))),
-                      TextField(controller: descCtrl, decoration: const InputDecoration(labelText: "Description", icon: Icon(Icons.description))),
-                      TextField(controller: locCtrl, decoration: const InputDecoration(labelText: "Location", icon: Icon(Icons.location_on))),
-                      TextField(controller: picCtrl, decoration: const InputDecoration(labelText: "PIC Name", icon: Icon(Icons.person))),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          const Icon(Icons.calendar_today, color: Colors.grey),
-                          const SizedBox(width: 15),
-                          Text("Deadline: ${DateFormat('dd MMM yyyy').format(selectedDate)}"),
-                          const Spacer(),
-                          TextButton(
-                            onPressed: () async {
-                              final picked = await showDatePicker(context: context, initialDate: selectedDate, firstDate: DateTime.now(), lastDate: DateTime(2030));
-                              if (picked != null) setDialogState(() => selectedDate = picked);
-                            }, 
-                            child: const Text("Change Date")
-                          )
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                           const Icon(Icons.flag, color: Colors.grey),
-                           const SizedBox(width: 15),
-                           const Text("Status: "),
-                           const SizedBox(width: 10),
-                           DropdownButton<String>(
-                             value: status,
-                             items: const [
-                               DropdownMenuItem(value: "Upcoming", child: Text("Upcoming")),
-                               DropdownMenuItem(value: "On Progress", child: Text("On Progress")),
-                             ], 
-                             onChanged: (val) => setDialogState(() => status = val!)
-                           )
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-                ElevatedButton(
-                  onPressed: () {
-                    if (titleCtrl.text.isEmpty) return;
-                    MockDatabase.addEvent(EventModel(
-                      DateTime.now().millisecondsSinceEpoch.toString(), 
-                      titleCtrl.text, 
-                      descCtrl.text, 
-                      status, 
-                      selectedDate, 
-                      locCtrl.text, 
-                      picCtrl.text
-                    ));
-                    Navigator.pop(context);
-                    _refresh(); 
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Project Created Successfully!")));
-                  },
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white),
-                  child: const Text("Create Project"),
-                )
-              ],
-            );
-          }
-        );
-      }
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final events = MockDatabase.getEvents();
-
-    return ListView(
-      padding: const EdgeInsets.all(30),
-      children: [
-        Container(
-          padding: const EdgeInsets.all(25),
-          decoration: BoxDecoration(gradient: const LinearGradient(colors: [Colors.deepPurple, Colors.purpleAccent]), borderRadius: BorderRadius.circular(15)),
-          child: Row(
+    showDialog(context: context, builder: (ctx) => StatefulBuilder(
+      builder: (context, setDst) => AlertDialog(
+        title: const Text("Create New Project"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text("Halo, ${widget.user.role} ${widget.user.username}!", style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 5),
-                  const Text("Selamat datang di Proof It! Kelola proyek dan bukti pekerjaanmu di sini.", style: TextStyle(color: Colors.white70)),
-                ]),
-              ),
-              const Icon(Icons.rocket_launch, color: Colors.white24, size: 80),
+              TextField(controller: title, decoration: const InputDecoration(labelText: "Project Title")),
+              TextField(controller: desc, decoration: const InputDecoration(labelText: "Description")),
+              TextField(controller: loc, decoration: const InputDecoration(labelText: "Location")),
+              const SizedBox(height: 10),
+              Row(children: [
+                const Text("Deadline: "),
+                TextButton(onPressed: () async {
+                  final d = await showDatePicker(context: context, initialDate: date, firstDate: DateTime.now(), lastDate: DateTime(2030));
+                  if(d!=null) setDst(()=> date = d);
+                }, child: Text(DateFormat('dd MMM yyyy').format(date)))
+              ]),
+              DropdownButton<String>(
+                value: status,
+                isExpanded: true,
+                items: ["Upcoming", "On Progress"].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                onChanged: (v) => setDst(()=> status = v!),
+              )
             ],
           ),
         ),
-        const SizedBox(height: 30),
-        
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text("Active Projects", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            if (widget.user.role == 'PIC' || widget.user.role == 'Admin')
-              ElevatedButton.icon(
-                onPressed: _showCreateProjectDialog,
-                icon: const Icon(Icons.add), 
-                label: const Text("Create Project"), 
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white)
-              ),
-          ],
-        ),
-        const SizedBox(height: 15),
-        
-        Wrap(
-          spacing: 20, 
-          runSpacing: 20, 
-          children: events.isEmpty 
-            ? [const Text("No projects available. Create one!", style: TextStyle(color: Colors.grey))] 
-            : events.map((e) => _buildEventCard(context, e)).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEventCard(BuildContext context, EventModel event) {
-    return Container(
-      width: 300,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [const BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(0, 4))]),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: event.status == 'Upcoming' ? Colors.orange[100] : Colors.green[100], borderRadius: BorderRadius.circular(5)), child: Text(event.status, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey[800]))),
-          PopupMenuButton(
-            icon: const Icon(Icons.more_vert, color: Colors.grey),
-            onSelected: (val) {
-              if (val == 'delete') {
-                 MockDatabase.deleteEvent(event.id);
-                 _refresh();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'delete', child: Text("Delete Project", style: TextStyle(color: Colors.red))),
-            ]
-          ),
-        ]),
-        const SizedBox(height: 10),
-        Text(event.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 5),
-        Text(event.description, style: const TextStyle(color: Colors.grey, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
-        const SizedBox(height: 15),
-        Row(children: [const Icon(Icons.calendar_today, size: 14, color: Colors.grey), const SizedBox(width: 5), Text(DateFormat('dd MMM yyyy').format(event.date), style: const TextStyle(fontSize: 12))]),
-        const SizedBox(height: 15),
-        
-        SizedBox(
-          width: double.infinity, 
-          child: OutlinedButton(
-            onPressed: (){
-              // Navigasi ke Halaman Detail Proyek dan Refresh saat kembali
-              Navigator.push(context, MaterialPageRoute(builder: (context) => ProjectDetailPage(event: event))).then((_) => _refresh());
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () {
+              MockDatabase.addEvent(EventModel(DateTime.now().millisecondsSinceEpoch.toString(), title.text, desc.text, status, date, loc.text, AuthSession.currentUser!.email, [AuthSession.currentUser!.email]));
+              Navigator.pop(context);
+              _refresh();
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Project Created!")));
             }, 
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.deepPurple), 
-            child: const Text("View Details")
+            child: const Text("Create")
           )
-        )
-      ]),
-    );
+        ],
+      ),
+    ));
   }
-}
-
-// ==========================================
-// 6. TEAM PAGE
-// ==========================================
-
-class TeamPage extends StatelessWidget {
-  const TeamPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    List<User> users = MockDatabase.getUsers();
-    
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.all(30),
+    final user = AuthSession.currentUser!;
+    final events = MockDatabase.getEvents();
+    final myEvents = user.role == UserRole.Admin 
+        ? events 
+        : events.where((e) => e.teamEmails.contains(user.email)).toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // BANNER
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(30),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [Colors.indigo, Colors.blueAccent], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [BoxShadow(color: Colors.indigo.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 5))]
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Welcome back, ${user.username}!", style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text("Track your projects, manage tasks, and prove your work effectively.", style: TextStyle(color: Colors.white70, fontSize: 16)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // STATISTICS
+          Row(
+            children: [
+              _statCard("Total Projects", "${events.length}", Colors.blue, Icons.folder),
+              const SizedBox(width: 15),
+              _statCard("My Active", "${myEvents.length}", Colors.orange, Icons.work),
+              const SizedBox(width: 15),
+              _statCard("Completed", "0", Colors.green, Icons.check_circle),
+            ],
+          ),
+          const SizedBox(height: 30),
+
+          // HEADER
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Recent Projects", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              if (user.role != UserRole.Member)
+                ElevatedButton.icon(
+                  onPressed: _showAddProjectDialog,
+                  icon: const Icon(Icons.add), label: const Text("New Project"),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                )
+            ],
+          ),
+          const SizedBox(height: 15),
+
+          // GRID
+          if (events.isEmpty) 
+            const Center(child: Padding(padding: EdgeInsets.all(20), child: Text("No projects found.")))
+          else
+            Wrap(
+              spacing: 20, runSpacing: 20,
+              children: events.map((e) => _buildProjectCard(e, user)).toList(),
+            )
+        ],
+      ),
+    );
+  }
+
+  Widget _statCard(String label, String value, Color color, IconData icon) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade200)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-             Row(
-               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-               children: [
-                 const Text("Team Members", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                 ElevatedButton.icon(onPressed: (){}, icon: const Icon(Icons.person_add), label: const Text("Add Member"), style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white)),
-               ],
-             ),
-             const SizedBox(height: 20),
-             Expanded(
-               child: ListView.separated(
-                 itemCount: users.length,
-                 separatorBuilder: (c, i) => const Divider(),
-                 itemBuilder: (context, index) {
-                   final u = users[index];
-                   return ListTile(
-                     leading: CircleAvatar(child: Text(u.username[0])),
-                     title: Text(u.username, style: const TextStyle(fontWeight: FontWeight.bold)),
-                     subtitle: Text(u.email),
-                     trailing: Chip(
-                       label: Text(u.role),
-                       backgroundColor: u.role == 'Admin' ? Colors.red[100] : (u.role == 'PIC' ? Colors.blue[100] : Colors.grey[200]),
-                     ),
-                   );
-                 },
-               ),
-             )
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 10),
+            Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildProjectCard(EventModel e, User user) {
+    return Container(
+      width: 350,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade200), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Chip(label: Text(e.status, style: const TextStyle(fontSize: 10, color: Colors.white)), backgroundColor: e.status == 'Upcoming' ? Colors.orange : Colors.blue, padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
+              if (user.role != UserRole.Member)
+                 IconButton(icon: const Icon(Icons.delete, size: 20, color: Colors.grey), onPressed: (){ MockDatabase.deleteEvent(e.id); _refresh(); })
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(e.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          const SizedBox(height: 5),
+          Text(e.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey)),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              const Icon(Icons.calendar_today, size: 14, color: Colors.grey), const SizedBox(width: 5),
+              Text(DateFormat('dd MMM yyyy').format(e.date), style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: 15),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProjectDetailPage(event: e))).then((_) => _refresh()),
+              child: const Text("View Details")
+            ),
+          )
+        ],
       ),
     );
   }
 }
 
 // ==========================================
-// 7. PROJECT DETAIL PAGE (UPDATED WITH EDIT)
+// 7. PROJECT DETAIL PAGE
 // ==========================================
 
 class ProjectDetailPage extends StatefulWidget {
@@ -575,335 +471,469 @@ class ProjectDetailPage extends StatefulWidget {
 }
 
 class _ProjectDetailPageState extends State<ProjectDetailPage> {
-  // State Lokal untuk refresh halaman setelah edit
-  late EventModel _currentEvent;
+  late EventModel _evt;
 
   @override
   void initState() {
     super.initState();
-    _currentEvent = widget.event;
+    _evt = widget.event;
   }
 
-  void _showEditProjectDialog() {
-    final titleCtrl = TextEditingController(text: _currentEvent.title);
-    final descCtrl = TextEditingController(text: _currentEvent.description);
-    final locCtrl = TextEditingController(text: _currentEvent.location);
-    final picCtrl = TextEditingController(text: _currentEvent.pic);
-    
-    DateTime selectedDate = _currentEvent.date;
-    String status = _currentEvent.status;
+  void _refresh() => setState(() {});
 
-    showDialog(
-      context: context, 
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text("Edit Project Details"),
-              content: SizedBox(
-                width: 500,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: "Project Title", icon: Icon(Icons.title))),
-                      TextField(controller: descCtrl, decoration: const InputDecoration(labelText: "Description", icon: Icon(Icons.description))),
-                      TextField(controller: locCtrl, decoration: const InputDecoration(labelText: "Location", icon: Icon(Icons.location_on))),
-                      TextField(controller: picCtrl, decoration: const InputDecoration(labelText: "PIC Name", icon: Icon(Icons.person))),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          const Icon(Icons.calendar_today, color: Colors.grey),
-                          const SizedBox(width: 15),
-                          Text("Deadline: ${DateFormat('dd MMM yyyy').format(selectedDate)}"),
-                          const Spacer(),
-                          TextButton(
-                            onPressed: () async {
-                              final picked = await showDatePicker(context: context, initialDate: selectedDate, firstDate: DateTime.now(), lastDate: DateTime(2030));
-                              if (picked != null) setDialogState(() => selectedDate = picked);
-                            }, 
-                            child: const Text("Change")
-                          )
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                           const Icon(Icons.flag, color: Colors.grey),
-                           const SizedBox(width: 15),
-                           const Text("Status: "),
-                           const SizedBox(width: 10),
-                           DropdownButton<String>(
-                             value: status,
-                             items: const [
-                               DropdownMenuItem(value: "Upcoming", child: Text("Upcoming")),
-                               DropdownMenuItem(value: "On Progress", child: Text("On Progress")),
-                               DropdownMenuItem(value: "Done", child: Text("Done")),
-                             ], 
-                             onChanged: (val) => setDialogState(() => status = val!)
-                           )
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-                ElevatedButton(
-                  onPressed: () {
-                    // Update ke Database
-                    final updatedEvent = EventModel(
-                      _currentEvent.id, 
-                      titleCtrl.text, 
-                      descCtrl.text, 
-                      status, 
-                      selectedDate, 
-                      locCtrl.text, 
-                      picCtrl.text
-                    );
-                    MockDatabase.updateEvent(_currentEvent.id, updatedEvent);
-                    
-                    // Update UI Lokal
-                    setState(() {
-                      _currentEvent = updatedEvent;
-                    });
-                    
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Project Updated!")));
-                  },
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white),
-                  child: const Text("Save Changes"),
+  void _showEditDialog() {
+    final title = TextEditingController(text: _evt.title);
+    final desc = TextEditingController(text: _evt.description);
+    final loc = TextEditingController(text: _evt.location);
+    DateTime date = _evt.date;
+    final emailCtrl = TextEditingController();
+
+    showDialog(context: context, builder: (ctx) => StatefulBuilder(
+      builder: (context, setDst) => AlertDialog(
+        title: const Text("Edit Project Details"),
+        content: SizedBox(
+          width: 500,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: title, decoration: const InputDecoration(labelText: "Project Name")),
+                TextField(controller: desc, maxLines: 3, decoration: const InputDecoration(labelText: "Description")),
+                TextField(controller: loc, decoration: const InputDecoration(labelText: "Location")),
+                const SizedBox(height: 10),
+                Row(children: [
+                  const Text("Deadline: "),
+                  TextButton(onPressed: () async {
+                    final d = await showDatePicker(context: context, initialDate: date, firstDate: DateTime(2023), lastDate: DateTime(2030));
+                    if(d!=null) setDst(()=> date = d);
+                  }, child: Text(DateFormat('dd MMM yyyy').format(date)))
+                ]),
+                const Divider(),
+                const Text("Manage Team (Add by Email)", style: TextStyle(fontWeight: FontWeight.bold)),
+                Row(children: [
+                  Expanded(child: TextField(controller: emailCtrl, decoration: const InputDecoration(hintText: "Enter user email"))),
+                  IconButton(icon: const Icon(Icons.add_circle, color: Colors.indigo), onPressed: (){
+                    if(emailCtrl.text.isNotEmpty && !_evt.teamEmails.contains(emailCtrl.text)) {
+                      setDst(() { _evt.teamEmails.add(emailCtrl.text); emailCtrl.clear(); });
+                    }
+                  })
+                ]),
+                Wrap(
+                  spacing: 5,
+                  children: _evt.teamEmails.map((e) => Chip(
+                    label: Text(e),
+                    onDeleted: () => setDst(() => _evt.teamEmails.remove(e)),
+                  )).toList(),
                 )
               ],
-            );
-          }
-        );
-      }
-    );
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: ()=>Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(onPressed: (){
+            final newEvt = EventModel(_evt.id, title.text, desc.text, _evt.status, date, loc.text, _evt.picEmail, _evt.teamEmails, attachments: _evt.attachments);
+            MockDatabase.updateEvent(_evt.id, newEvt);
+            setState(() => _evt = newEvt);
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Project Updated!")));
+          }, child: const Text("Save Changes"))
+        ],
+      )
+    ));
+  }
+
+  void _addAttachment() {
+    setState(() { _evt.attachments.add("file_${DateTime.now().second}.jpg"); });
+    MockDatabase.updateEvent(_evt.id, _evt);
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("File Attached!")));
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = AuthSession.currentUser!;
+    final canEdit = user.role == UserRole.Admin || user.role == UserRole.PIC;
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Project Details"), backgroundColor: Colors.white, foregroundColor: Colors.black, elevation: 1),
+      appBar: AppBar(title: Text(_evt.title), elevation: 1, backgroundColor: Colors.white, foregroundColor: Colors.black),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(30),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (canEdit)
+              Align(alignment: Alignment.centerRight, child: ElevatedButton.icon(onPressed: _showEditDialog, icon: const Icon(Icons.edit), label: const Text("Edit Project"), style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white))),
+            
+            const SizedBox(height: 10),
             Row(children: [
-              Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.deepPurple.withOpacity(0.1), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.folder_copy, color: Colors.deepPurple, size: 30)),
-              const SizedBox(width: 20),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(_currentEvent.title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)), const SizedBox(height: 5), Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: _currentEvent.status == 'Upcoming' ? Colors.orange : Colors.green, borderRadius: BorderRadius.circular(20)), child: Text(_currentEvent.status, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)))])),
+              _infoTile(Icons.calendar_today, "Deadline", DateFormat('dd MMM yyyy').format(_evt.date)),
+              const SizedBox(width: 10),
+              _infoTile(Icons.location_on, "Location", _evt.location),
+              const SizedBox(width: 10),
+              _infoTile(Icons.person, "PIC", _evt.picEmail),
             ]),
-            const SizedBox(height: 30),
-            
-            GridView.count(
-              shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 3, crossAxisSpacing: 20, mainAxisSpacing: 20, childAspectRatio: 2.5,
-              children: [
-                _buildInfoCard(Icons.calendar_month, "Date", DateFormat('dd MMMM yyyy').format(_currentEvent.date)),
-                _buildInfoCard(Icons.location_on, "Location", _currentEvent.location),
-                _buildInfoCard(Icons.person, "PIC", _currentEvent.pic),
-              ],
-            ),
-            const SizedBox(height: 30),
-            
+            const SizedBox(height: 24),
+
             const Text("Description", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Container(width: double.infinity, padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey[300]!)), child: Text(_currentEvent.description, style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.black87))),
-            const SizedBox(height: 30),
+            const SizedBox(height: 8),
+            Container(width: double.infinity, padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade200)), child: Text(_evt.description, style: const TextStyle(fontSize: 16, height: 1.5))),
+            const SizedBox(height: 24),
 
-            const Text("Quick Notes", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text("Team Members", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
-            TextField(
-              decoration: InputDecoration(
-                hintText: "Add a quick note...",
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                suffixIcon: IconButton(icon: const Icon(Icons.send), onPressed: (){})
-              ),
+            Wrap(spacing: 10, runSpacing: 10, children: _evt.teamEmails.map((e) {
+              final u = MockDatabase.getUserByEmail(e);
+              return Chip(avatar: CircleAvatar(child: Text(e[0].toUpperCase())), label: Text(u?.username ?? e), backgroundColor: Colors.white, side: BorderSide(color: Colors.grey.shade300));
+            }).toList()),
+            const SizedBox(height: 24),
+
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              const Text("Attachments", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              TextButton.icon(onPressed: _addAttachment, icon: const Icon(Icons.upload_file), label: const Text("Add File"))
+            ]),
+            Container(
+              height: 100, width: double.infinity, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
+              child: _evt.attachments.isEmpty 
+                  ? const Center(child: Text("No attachments yet."))
+                  : ListView.builder(scrollDirection: Axis.horizontal, padding: const EdgeInsets.all(10), itemCount: _evt.attachments.length, itemBuilder: (c, i) => Container(width: 80, margin: const EdgeInsets.only(right: 10), decoration: BoxDecoration(color: Colors.indigo.shade50, borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.insert_drive_file, color: Colors.indigo, size: 30))),
             ),
-
             const SizedBox(height: 30),
-            Row(children: [
-              // TOMBOL EDIT BERFUNGSI
-              ElevatedButton.icon(
-                onPressed: _showEditProjectDialog, 
-                icon: const Icon(Icons.edit), 
-                label: const Text("Edit Project"), 
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15))
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(appBar: AppBar(title: const Text("Project Roadmap")), body: RoadmapPage(initialProjectId: _evt.id)))); },
+                icon: const Icon(Icons.map), label: const Text("View Project Roadmap"),
+                style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(16), backgroundColor: Colors.indigo, foregroundColor: Colors.white),
               ),
-              const SizedBox(width: 15),
-              OutlinedButton.icon(
-                onPressed: (){
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const RoadmapPage()));
-                }, 
-                icon: const Icon(Icons.list_alt), 
-                label: const Text("Open Roadmap"), 
-                style: OutlinedButton.styleFrom(foregroundColor: Colors.deepPurple, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15))
-              ),
-            ])
+            )
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoCard(IconData icon, String label, String value) {
-    return Container(padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey[300]!)), child: Row(children: [Icon(icon, color: Colors.grey, size: 20), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)), Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), overflow: TextOverflow.ellipsis)]))]));
+  Widget _infoTile(IconData icon, String label, String val) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade200)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [Icon(icon, size: 16, color: Colors.grey), const SizedBox(width: 5), Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey))]),
+          const SizedBox(height: 5),
+          Text(val, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold)),
+        ]),
+      ),
+    );
   }
 }
 
 // ==========================================
-// 8. ROADMAP PAGE (UPDATED ADD TASK)
+// 8. ROADMAP PAGE (ADD & EDIT TASK UPDATED)
 // ==========================================
 
 class RoadmapPage extends StatefulWidget {
-  const RoadmapPage({super.key});
+  final String? initialProjectId;
+  const RoadmapPage({super.key, this.initialProjectId});
   @override
   State<RoadmapPage> createState() => _RoadmapPageState();
 }
 
 class _RoadmapPageState extends State<RoadmapPage> {
-  final ScrollController _horizontalController = ScrollController();
-  final double _rowHeight = 50.0;
-  final double _headerHeight = 40.0;
-  final double _taskColumnWidth = 250.0;
-  final double _dayWidth = 30.0;
-  final DateTime _startDate = DateTime(2023, 10, 1);
+  String _filter = "All";
+  final double _dayWidth = 40.0;
+  final double _rowHeight = 60.0;
+  final DateTime _viewStartDate = DateTime.now().subtract(const Duration(days: 30));
+
+  @override
+  void initState() {
+    super.initState();
+    if(widget.initialProjectId != null) _filter = widget.initialProjectId!;
+  }
 
   void _refresh() => setState(() {});
 
-  void _showTaskDetail(RoadmapTask task) {
-    showDialog(context: context, builder: (context) {
-      return StatefulBuilder(builder: (context, setStateDialog) {
-        return AlertDialog(
-          title: Text(task.title),
-          content: SizedBox(width: 400, child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text("Description:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[700])), Text(task.description), const SizedBox(height: 15),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text("Status: ${task.status}", style: const TextStyle(fontWeight: FontWeight.bold)), Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: task.status == 'Done' ? Colors.green : (task.status == 'In Progress' ? Colors.blue : Colors.grey), borderRadius: BorderRadius.circular(4)), child: Text(task.status, style: const TextStyle(color: Colors.white, fontSize: 12)))]),
-            const SizedBox(height: 20),
-            Text("Progress: ${(task.progress * 100).toInt()}%", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[700])),
-            Slider(value: task.progress, min: 0.0, max: 1.0, activeColor: Colors.deepPurple, onChanged: (val) { setStateDialog(() { task.progress = val; if (val == 1.0) task.status = 'Done'; else if (val > 0) task.status = 'In Progress'; else task.status = 'To Do'; }); }),
-          ])),
-          actions: [
-            TextButton(onPressed: () { MockDatabase.deleteTask(task.id); Navigator.pop(context); _refresh(); }, child: const Text("Delete", style: TextStyle(color: Colors.red))),
-            ElevatedButton(onPressed: () { MockDatabase.updateTaskStatus(task.id, task.status, task.progress); Navigator.pop(context); _refresh(); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white), child: const Text("Save Changes")),
-          ],
-        );
-      });
-    });
+  Color _getTaskColor(RoadmapTask t) {
+    if (t.status == 'Done') return Colors.green;
+    if (DateTime.now().isAfter(t.end) && t.status != 'Done') return Colors.red;
+    if (t.progress >= 0.5) return Colors.amber;
+    return Colors.purple.shade300;
   }
 
-  // --- ADD TASK DENGAN DATE RANGE ---
-  void _showAddTaskDialog() {
-    final titleCtrl = TextEditingController(); 
-    final descCtrl = TextEditingController();
+  // DIALOG: ADD / EDIT TASK
+  void _showTaskDialog({RoadmapTask? task}) {
+    final isEdit = task != null;
+    final title = TextEditingController(text: isEdit ? task.title : "");
+    final desc = TextEditingController(text: isEdit ? task.description : "");
     
-    // State Lokal untuk Dialog
-    DateTime startDate = DateTime.now();
-    DateTime endDate = DateTime.now().add(const Duration(days: 7));
+    DateTime start = isEdit ? task.start : DateTime.now();
+    DateTime end = isEdit ? task.end : DateTime.now().add(const Duration(days: 7));
+    String status = isEdit ? task.status : "To Do";
+    double progress = isEdit ? task.progress : 0.0;
+    
+    // Grouping: Select Project (If adding new)
+    String selectedProjId = _filter != "All" ? _filter : (MockDatabase.getEvents().isNotEmpty ? MockDatabase.getEvents().first.id : "");
 
-    showDialog(
-      context: context, 
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text("Add New Task"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: "Task Title")), 
-                  TextField(controller: descCtrl, decoration: const InputDecoration(labelText: "Description")),
-                  const SizedBox(height: 20),
-                  // START DATE
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                      const SizedBox(width: 10),
-                      Text("Start: ${DateFormat('dd MMM').format(startDate)}"),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () async {
-                           final picked = await showDatePicker(context: context, initialDate: startDate, firstDate: DateTime(2023), lastDate: DateTime(2030));
-                           if (picked != null) setDialogState(() => startDate = picked);
-                        }, 
-                        child: const Text("Select")
-                      )
-                    ],
+    showDialog(context: context, builder: (ctx) => StatefulBuilder(
+      builder: (context, setDst) => AlertDialog(
+        title: Text(isEdit ? "Edit Task" : "Add New Task"),
+        content: SizedBox(
+          width: 400,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!isEdit && _filter == "All") 
+                  DropdownButton<String>(
+                    value: selectedProjId, isExpanded: true,
+                    items: MockDatabase.getEvents().map((e) => DropdownMenuItem(value: e.id, child: Text(e.title))).toList(),
+                    onChanged: (v) => setDst(() => selectedProjId = v!),
                   ),
-                  // END DATE
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                      const SizedBox(width: 10),
-                      Text("End:   ${DateFormat('dd MMM').format(endDate)}"),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () async {
-                           final picked = await showDatePicker(context: context, initialDate: endDate, firstDate: DateTime(2023), lastDate: DateTime(2030));
-                           if (picked != null) setDialogState(() => endDate = picked);
-                        }, 
-                        child: const Text("Select")
-                      )
-                    ],
-                  )
-                ],
-              ),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-                ElevatedButton(
-                  onPressed: () { 
-                    MockDatabase.addTask(RoadmapTask(
-                      id: DateTime.now().toString(), 
-                      title: titleCtrl.text, 
-                      description: descCtrl.text, 
-                      status: "To Do", 
-                      start: startDate, 
-                      end: endDate
-                    )); 
-                    Navigator.pop(context); 
-                    _refresh(); 
-                  }, 
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white), 
-                  child: const Text("Create")
+                TextField(controller: title, decoration: const InputDecoration(labelText: "Task Name")),
+                TextField(controller: desc, decoration: const InputDecoration(labelText: "Description")),
+                const SizedBox(height: 15),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  TextButton(onPressed: () async { final d = await showDatePicker(context: context, initialDate: start, firstDate: DateTime(2023), lastDate: DateTime(2030)); if(d!=null) setDst(()=>start=d); }, child: Text("Start: ${DateFormat('dd MMM').format(start)}")),
+                  TextButton(onPressed: () async { final d = await showDatePicker(context: context, initialDate: end, firstDate: DateTime(2023), lastDate: DateTime(2030)); if(d!=null) setDst(()=>end=d); }, child: Text("End: ${DateFormat('dd MMM').format(end)}")),
+                ]),
+                const SizedBox(height: 10),
+                const Text("Progress (Scroll to update)"),
+                Slider(value: progress, onChanged: (v){ setDst((){ progress = v; if(v==1.0) status = "Done"; else if(v>0) status = "In Progress"; else status = "To Do"; }); }),
+                DropdownButton<String>(
+                   value: status, isExpanded: true,
+                   items: ["To Do", "In Progress", "Done"].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                   onChanged: (v) => setDst(() => status = v!),
                 )
               ],
-            );
-          }
-        );
-      }
-    );
+            ),
+          ),
+        ),
+        actions: [
+          if (isEdit) TextButton(onPressed: (){ MockDatabase.deleteTask(task.id); Navigator.pop(context); _refresh(); }, child: const Text("Delete", style: TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(onPressed: (){
+            if (isEdit) {
+              // UPDATE EXISTING
+              task.title = title.text;
+              task.description = desc.text;
+              task.start = start;
+              task.end = end;
+              task.status = status;
+              task.progress = progress;
+              MockDatabase.updateTask(task);
+            } else {
+              // ADD NEW
+              MockDatabase.addTask(RoadmapTask(id: DateTime.now().toString(), projectId: selectedProjId, title: title.text, description: desc.text, status: status, start: start, end: end, progress: progress));
+            }
+            Navigator.pop(context);
+            _refresh();
+          }, child: Text(isEdit ? "Save Changes" : "Create Task"))
+        ],
+      ),
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
-    List<RoadmapTask> tasks = MockDatabase.getRoadmap();
+    final projects = MockDatabase.getEvents();
+    final allTasks = MockDatabase.getAllTasks();
+    final displayTasks = _filter == "All" ? allTasks : allTasks.where((t) => t.projectId == _filter).toList();
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Roadmap"), elevation: 1, backgroundColor: Colors.white, foregroundColor: Colors.black),
-      backgroundColor: Colors.white,
+      floatingActionButton: FloatingActionButton(onPressed: () => _showTaskDialog(), child: const Icon(Icons.add)),
       body: Column(
         children: [
-          Container(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15), decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFDFE1E6)))), child: Row(children: [const Text("Roadmap View", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF172B4D))), const Spacer(), ElevatedButton.icon(onPressed: _showAddTaskDialog, icon: const Icon(Icons.add), label: const Text("Add Task"), style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white))])),
-          Expanded(child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            SizedBox(width: _taskColumnWidth, child: Column(children: [
-              Container(height: _headerHeight, padding: const EdgeInsets.only(left: 20, top: 10), decoration: const BoxDecoration(color: Color(0xFFF4F5F7), border: Border(bottom: BorderSide(color: Color(0xFFDFE1E6)), right: BorderSide(color: Color(0xFFDFE1E6)))), alignment: Alignment.centerLeft, child: const Text("Epic", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6B778C)))),
-              Expanded(child: ListView.builder(itemCount: tasks.length, itemBuilder: (context, index) { return InkWell(onTap: () => _showTaskDetail(tasks[index]), child: Container(height: _rowHeight, padding: const EdgeInsets.symmetric(horizontal: 20), alignment: Alignment.centerLeft, decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFEBECF0)), right: BorderSide(color: Color(0xFFDFE1E6)))), child: Row(children: [Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: tasks[index].status == 'Done' ? Colors.green : Colors.deepPurple, borderRadius: BorderRadius.circular(4)), child: Icon(tasks[index].status == 'Done' ? Icons.check : Icons.bolt, color: Colors.white, size: 12)), const SizedBox(width: 10), Expanded(child: Text(tasks[index].title, style: const TextStyle(color: Color(0xFF172B4D), fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis))]))); }))
-            ])),
-            Expanded(child: SingleChildScrollView(scrollDirection: Axis.horizontal, controller: _horizontalController, child: SizedBox(width: _dayWidth * 90, child: Column(children: [
-              Container(height: _headerHeight, decoration: const BoxDecoration(color: Color(0xFFF4F5F7), border: Border(bottom: BorderSide(color: Color(0xFFDFE1E6)))), child: Stack(children: [Row(children: List.generate(90, (i) => Container(width: _dayWidth, decoration: const BoxDecoration(border: Border(right: BorderSide(color: Color(0xFFEBECF0))))))), const Positioned(left: 10, top: 10, child: Text("Oct 2023", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6B778C)))), Positioned(left: 31 * _dayWidth + 10, top: 10, child: const Text("Nov 2023", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6B778C))))])),
-              Expanded(child: SingleChildScrollView(child: Stack(children: [
-                Column(children: List.generate(tasks.length, (index) => Container(height: _rowHeight, decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFEBECF0)))), child: Row(children: List.generate(90, (i) => Container(width: _dayWidth, decoration: const BoxDecoration(border: Border(right: BorderSide(color: Color(0xFFF4F5F7)))))))))),
-                ...tasks.asMap().entries.map((entry) { final task = entry.value; final index = entry.key; int startOffset = task.start.difference(_startDate).inDays; int duration = task.end.difference(task.start).inDays; if (startOffset < 0) startOffset = 0; return Positioned(top: index * _rowHeight + 12.0, left: startOffset * _dayWidth, child: Tooltip(message: "${task.title} (${(task.progress * 100).toInt()}%)", child: InkWell(onTap: () => _showTaskDetail(task), child: Container(width: (duration * _dayWidth).toDouble(), height: 26, padding: const EdgeInsets.symmetric(horizontal: 8), alignment: Alignment.centerLeft, decoration: BoxDecoration(color: task.status == 'Done' ? Colors.green : const Color(0xFF8777D9), borderRadius: BorderRadius.circular(4)), child: FractionallySizedBox(widthFactor: task.progress, child: Container(decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), borderRadius: BorderRadius.circular(4)))))))); }).toList(),
-                Positioned(left: DateTime.now().difference(_startDate).inDays * _dayWidth, top: 0, bottom: 0, child: Container(width: 2, color: Colors.orange))
-              ])))
-            ]))))
-          ]))
+          Container(
+            height: 50, color: Colors.white,
+            child: ListView(
+              scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              children: [
+                _buildFilterChip("All Projects", "All"),
+                ...projects.map((p) => _buildFilterChip(p.title, p.id)),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 200, decoration: BoxDecoration(border: Border(right: BorderSide(color: Colors.grey.shade300))),
+                  child: Column(
+                    children: [
+                      Container(height: 50, alignment: Alignment.centerLeft, padding: const EdgeInsets.only(left: 10), color: Colors.grey.shade100, child: const Text("Task Name", style: TextStyle(fontWeight: FontWeight.bold))),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: displayTasks.length,
+                          itemBuilder: (c, i) => Container(
+                            height: _rowHeight, alignment: Alignment.centerLeft, padding: const EdgeInsets.only(left: 10),
+                            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade100))),
+                            child: Text(displayTasks[i].title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: _dayWidth * 120,
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            height: 50,
+                            child: Stack(children: [
+                              for(int i=0; i<120; i+=30)
+                                Positioned(left: i*_dayWidth, top: 15, child: Text(DateFormat('MMM').format(_viewStartDate.add(Duration(days: i))), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey))),
+                            ]),
+                          ),
+                          const Divider(height: 1),
+                          Expanded(
+                            child: Stack(
+                              children: [
+                                for(int i=0; i<120; i+=7) Positioned(left: i*_dayWidth, top: 0, bottom: 0, child: Container(width: 1, color: Colors.grey.shade100)),
+                                ...displayTasks.asMap().entries.map((entry) {
+                                  final t = entry.value;
+                                  final i = entry.key;
+                                  final startOffset = t.start.difference(_viewStartDate).inDays * _dayWidth;
+                                  final width = t.end.difference(t.start).inDays * _dayWidth;
+                                  return Positioned(
+                                    top: i * _rowHeight + 15, left: startOffset,
+                                    child: InkWell(
+                                      onTap: () => _showTaskDialog(task: t), // EDIT ON CLICK
+                                      child: Container(
+                                        width: width < _dayWidth ? _dayWidth : width, height: 30,
+                                        decoration: BoxDecoration(color: _getTaskColor(t), borderRadius: BorderRadius.circular(4)),
+                                        alignment: Alignment.centerLeft, padding: const EdgeInsets.symmetric(horizontal: 5),
+                                        child: Text("${(t.progress * 100).toInt()}%", style: const TextStyle(color: Colors.white, fontSize: 10)),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                                Positioned(left: DateTime.now().difference(_viewStartDate).inDays * _dayWidth, top: 0, bottom: 0, child: Container(width: 2, color: Colors.blueAccent))
+                              ],
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              ],
+            ),
+          )
         ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, String id) {
+    return Padding(padding: const EdgeInsets.only(right: 8.0), child: ChoiceChip(label: Text(label), selected: _filter == id, onSelected: (v) => setState(() => _filter = id), selectedColor: Colors.indigo.shade100));
+  }
+}
+
+// ==========================================
+// 9. TEAM PAGE (ADMIN MANAGEMENT)
+// ==========================================
+
+class TeamPage extends StatefulWidget {
+  const TeamPage({super.key});
+  @override
+  State<TeamPage> createState() => _TeamPageState();
+}
+
+class _TeamPageState extends State<TeamPage> {
+  void _refresh() => setState(() {});
+
+  void _showAddUserDialog() {
+    final name = TextEditingController();
+    final email = TextEditingController();
+    final pass = TextEditingController();
+    UserRole role = UserRole.Member;
+
+    showDialog(context: context, builder: (ctx) => StatefulBuilder(
+      builder: (context, setDst) => AlertDialog(
+        title: const Text("Add New User"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: name, decoration: const InputDecoration(labelText: "Username")),
+            TextField(controller: email, decoration: const InputDecoration(labelText: "Email")),
+            TextField(controller: pass, decoration: const InputDecoration(labelText: "Password")),
+            const SizedBox(height: 10),
+            DropdownButton<UserRole>(
+              value: role, isExpanded: true,
+              items: UserRole.values.map((r) => DropdownMenuItem(value: r, child: Text(r.toString().split('.').last))).toList(),
+              onChanged: (v) => setDst(()=> role = v!),
+            )
+          ],
+        ),
+        actions: [
+          ElevatedButton(onPressed: (){
+            MockDatabase.addUser(User(id: DateTime.now().toString(), username: name.text, email: email.text, password: pass.text, role: role));
+            Navigator.pop(context); _refresh();
+          }, child: const Text("Create User"))
+        ],
+      )
+    ));
+  }
+
+  void _showEditUserDialog(User user) {
+    final name = TextEditingController(text: user.username);
+    final email = TextEditingController(text: user.email);
+    UserRole role = user.role;
+
+    showDialog(context: context, builder: (ctx) => StatefulBuilder(
+      builder: (context, setDst) => AlertDialog(
+        title: const Text("Edit User"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: name, decoration: const InputDecoration(labelText: "Username")),
+            TextField(controller: email, decoration: const InputDecoration(labelText: "Email")),
+            const SizedBox(height: 10),
+            DropdownButton<UserRole>(
+              value: role, isExpanded: true,
+              items: UserRole.values.map((r) => DropdownMenuItem(value: r, child: Text(r.toString().split('.').last))).toList(),
+              onChanged: (v) => setDst(()=> role = v!),
+            )
+          ],
+        ),
+        actions: [
+          ElevatedButton(onPressed: (){
+            MockDatabase.updateUser(User(id: user.id, username: name.text, email: email.text, password: user.password, role: role));
+            Navigator.pop(context); _refresh();
+          }, child: const Text("Update User"))
+        ],
+      )
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUser = AuthSession.currentUser!;
+    final users = MockDatabase.getUsers();
+    final canManage = currentUser.role == UserRole.Admin;
+
+    return Scaffold(
+      floatingActionButton: canManage ? FloatingActionButton(onPressed: _showAddUserDialog, child: const Icon(Icons.add)) : null,
+      body: ListView.separated(
+        padding: const EdgeInsets.all(24),
+        itemCount: users.length,
+        separatorBuilder: (c, i) => const Divider(),
+        itemBuilder: (c, i) {
+          final u = users[i];
+          return ListTile(
+            leading: CircleAvatar(child: Text(u.username[0])),
+            title: Text(u.username, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text("${u.email} • ${u.role.toString().split('.').last}"),
+            trailing: canManage 
+              ? IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _showEditUserDialog(u))
+              : null,
+          );
+        },
       ),
     );
   }

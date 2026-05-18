@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+import 'dart:ui'; // Tambahan untuk efek blur
 import 'package:file_picker/file_picker.dart';
 import 'package:main/API/api_storage.dart';
 import 'package:main/API/api_user.dart';
@@ -94,9 +94,7 @@ class _ForumPageState extends State<ForumPage> {
           'reply_to_id': replyId?.toString(),
         });
 
-  
         if (replyId != null) {
-          
           final originalUserId = _replyingTo?['user_id']?.toString() ?? '';
           if (originalUserId.isNotEmpty &&
               originalUserId != AuthSession.currentUser!.id) {
@@ -113,7 +111,7 @@ class _ForumPageState extends State<ForumPage> {
           final memberIds = widget.event.teamEmails
               .where(
                 (email) => email != AuthSession.currentUser!.email,
-              ) 
+              )
               .toList();
 
           if (memberIds.isNotEmpty) {
@@ -194,17 +192,81 @@ class _ForumPageState extends State<ForumPage> {
         lower.endsWith('.webp');
   }
 
-  Future<void> _openUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
+  Future<void> _downloadFile(String url) async {
+    try {
+      // Trik Supabase: Tambahkan parameter download agar browser memaksa unduh file
+      String downloadUrl = url;
+      if (!url.toLowerCase().contains('download=')) {
+        downloadUrl = url.contains('?') ? '$url&download=' : '$url?download=';
+      }
+
+      final uri = Uri.parse(downloadUrl);
+      
+      // Menggunakan try-catch lebih aman dibanding canLaunchUrl di Android 11+
       await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Tidak bisa membuka file")),
+          const SnackBar(content: Text("Memulai proses download...")),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Gagal mendownload file: $e")),
         );
       }
     }
+  }
+
+  void _showFullScreenImage(String url) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.4),
+      builder: (BuildContext context) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(16),
+            elevation: 0,
+            child: Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: [
+                InteractiveViewer(
+                  panEnabled: true,
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      url,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: -15,
+                  right: -15,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.black),
+                      iconSize: 24,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildAttachment(String url, String? fileName) {
@@ -215,31 +277,34 @@ class _ForumPageState extends State<ForumPage> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              url,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Container(
-                  height: 150,
+          GestureDetector(
+            onTap: () => _showFullScreenImage(url),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                url,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(child: CircularProgressIndicator()),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 100,
                   decoration: BoxDecoration(
                     color: Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Center(child: CircularProgressIndicator()),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) => Container(
-                height: 100,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Center(
-                  child: Icon(Icons.broken_image, color: Colors.grey, size: 40),
+                  child: const Center(
+                    child: Icon(Icons.broken_image, color: Colors.grey, size: 40),
+                  ),
                 ),
               ),
             ),
@@ -248,33 +313,7 @@ class _ForumPageState extends State<ForumPage> {
           Row(
             children: [
               InkWell(
-                onTap: () => _openUrl(url),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.indigo.shade50,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.indigo.shade200),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.open_in_new, size: 14, color: Colors.indigo),
-                      SizedBox(width: 4),
-                      Text(
-                        "Buka",
-                        style: TextStyle(color: Colors.indigo, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              InkWell(
-                onTap: () => _openUrl(url),
+                onTap: () => _downloadFile(url),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -325,17 +364,9 @@ class _ForumPageState extends State<ForumPage> {
           ),
           const SizedBox(width: 8),
           IconButton(
-            icon: const Icon(Icons.open_in_new, size: 18, color: Colors.indigo),
-            tooltip: "Buka",
-            onPressed: () => _openUrl(url),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
             icon: const Icon(Icons.download, size: 18, color: Colors.green),
             tooltip: "Download",
-            onPressed: () => _openUrl(url),
+            onPressed: () => _downloadFile(url),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
@@ -480,201 +511,200 @@ class _ForumPageState extends State<ForumPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 14,
-                            backgroundColor: Colors.indigo,
-                            child: Text(
-                              initial,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              senderName,
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (isMe) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.indigo,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text(
-                                "You",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ),
-                          ],
-                          const Spacer(),
-                          if (hasReplies)
-                            InkWell(
-                              onTap: () => setState(() {
-                                if (isCollapsed) {
-                                  _collapsedPosts.remove(postId);
-                                } else {
-                                  _collapsedPosts.add(postId);
-                                }
-                              }),
-                              borderRadius: BorderRadius.circular(4),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      isCollapsed
-                                          ? Icons.keyboard_arrow_down
-                                          : Icons.keyboard_arrow_up,
-                                      size: 16,
-                                      color: Colors.grey,
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Text(
-                                      isCollapsed ? "Tampilkan" : "Sembunyikan",
-                                      style: const TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      if (message.isNotEmpty)
-                        Text(
-                          message,
-                          style: const TextStyle(
-                            color: Colors.black87,
-                            fontSize: 14,
-                            height: 1.4,
-                          ),
-                        ),
-                      if (attachmentUrl != null) ...[
-                        if (message.isNotEmpty) const SizedBox(height: 12),
-                        _buildAttachment(attachmentUrl, attachmentName),
-                      ],
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          InkWell(
-                            onTap: () => setState(() {
-                              _replyingTo = post;
-                              _editingMessage = null;
-                            }),
-                            child: const Text(
-                              "Reply",
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          if (isMe) ...[
-                            const SizedBox(width: 16),
-                            InkWell(
-                              onTap: () => setState(() {
-                                _editingMessage = post;
-                                _replyingTo = null;
-                                _postController.text = message;
-                              }),
-                              child: const Text(
-                                "Edit",
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            InkWell(
-                              onTap: () async {
-                                final confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder: (c) => AlertDialog(
-                                    title: const Text("Hapus Post?"),
-                                    content: const Text(
-                                      "Tindakan ini tidak bisa dibatalkan.",
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(c, false),
-                                        child: const Text("Batal"),
-                                      ),
-                                      ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red,
-                                        ),
-                                        onPressed: () => Navigator.pop(c, true),
-                                        child: const Text("Hapus"),
-                                      ),
-                                    ],
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 14,
+                                backgroundColor: Colors.indigo,
+                                child: Text(
+                                  initial,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                );
-                                if (confirm == true) {
-                                  // PERBAIKAN: Gunakan ApiService untuk delete
-                                  try {
-                                    await ApiForum.deleteMessage(postId);
-                                    _fetchForums();
-                                  } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text("Gagal Hapus: $e"),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  senderName,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (isMe) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.indigo,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    "You",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              const Spacer(),
+                              if (hasReplies)
+                                InkWell(
+                                  onTap: () => setState(() {
+                                    if (isCollapsed) {
+                                      _collapsedPosts.remove(postId);
+                                    } else {
+                                      _collapsedPosts.add(postId);
+                                    }
+                                  }),
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          isCollapsed
+                                              ? Icons.keyboard_arrow_down
+                                              : Icons.keyboard_arrow_up,
+                                          size: 16,
+                                          color: Colors.grey,
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          isCollapsed ? "Tampilkan" : "Sembunyikan",
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          if (message.isNotEmpty)
+                            Text(
+                              message,
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontSize: 14,
+                                height: 1.4,
+                              ),
+                            ),
+                          if (attachmentUrl != null) ...[
+                            if (message.isNotEmpty) const SizedBox(height: 12),
+                            _buildAttachment(attachmentUrl, attachmentName),
+                          ],
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              InkWell(
+                                onTap: () => setState(() {
+                                  _replyingTo = post;
+                                  _editingMessage = null;
+                                }),
+                                child: const Text(
+                                  "Reply",
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              if (isMe) ...[
+                                const SizedBox(width: 16),
+                                InkWell(
+                                  onTap: () => setState(() {
+                                    _editingMessage = post;
+                                    _replyingTo = null;
+                                    _postController.text = message;
+                                  }),
+                                  child: const Text(
+                                    "Edit",
+                                    style: TextStyle(
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                InkWell(
+                                  onTap: () async {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (c) => AlertDialog(
+                                        title: const Text("Hapus Post?"),
+                                        content: const Text(
+                                          "Tindakan ini tidak bisa dibatalkan.",
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(c, false),
+                                            child: const Text("Batal"),
+                                          ),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                            ),
+                                            onPressed: () => Navigator.pop(c, true),
+                                            child: const Text("Hapus"),
+                                          ),
+                                        ],
                                       ),
                                     );
-                                  }
-                                }
-                              },
-                              child: const Text(
-                                "Delete",
-                                style: TextStyle(
-                                  color: Colors.red,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
+                                    if (confirm == true) {
+                                      try {
+                                        await ApiForum.deleteMessage(postId);
+                                        _fetchForums();
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text("Gagal Hapus: $e"),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                                  child: const Text(
+                                    "Delete",
+                                    style: TextStyle(
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ],
+                              ],
+                            ],
+                          ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
-        ),
-      );
+            ),
+          );
     } catch (e) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

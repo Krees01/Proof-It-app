@@ -194,7 +194,6 @@ class _ForumPageState extends State<ForumPage> {
 
   Future<void> _downloadFile(String url) async {
     try {
-      // Trik Supabase: Tambahkan parameter download agar browser memaksa unduh file
       String downloadUrl = url;
       if (!url.toLowerCase().contains('download=')) {
         downloadUrl = url.contains('?') ? '$url&download=' : '$url?download=';
@@ -202,7 +201,6 @@ class _ForumPageState extends State<ForumPage> {
 
       final uri = Uri.parse(downloadUrl);
       
-      // Menggunakan try-catch lebih aman dibanding canLaunchUrl di Android 11+
       await launchUrl(uri, mode: LaunchMode.externalApplication);
       
       if (mounted) {

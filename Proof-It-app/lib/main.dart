@@ -14,7 +14,7 @@ void main() async {
   await Supabase.initialize(
     url: 'https://qpaicltxcyzuluciidpe.supabase.co',
     anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwYWljbHR4Y3l6dWx1Y2lpZHBlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NDkwNzAsImV4cCI6MjA4ODUyNTA3MH0.05Jpe9ky62Jsyzolea499_AXDBBU3s10v0WvcYPoqD4',
+        'sb_publishable_96ZmWPRM4-68gSs17HGZZw_ybFLpuWe',
   );
 
   Widget initialScreen = const WelcomeScreen();

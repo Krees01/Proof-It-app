@@ -29,7 +29,7 @@ class _RoadmapPageState extends State<RoadmapPage> {
   String _filter = "All";
   final double _dayWidth = 15.0;
   final double _rowHeight = 55.0;
-  final int _totalDays = 365; 
+  final int _totalDays = 365;
 
   DateTime _viewStartDate = DateTime.now().subtract(const Duration(days: 90));
 
@@ -72,15 +72,13 @@ class _RoadmapPageState extends State<RoadmapPage> {
     setState(() => _isLoading = true);
     try {
       final user = AuthSession.currentUser!;
-      final response = await _apiService.fetchRoadmap(
-        user.id,
-        user.role.name, 
-      );
+      final response = await _apiService.fetchRoadmap(user.id, user.role.name);
       final List<dynamic> projRes = response['projects'] ?? [];
       _projects = projRes.map((row) {
         final endDateStr = row['end_date']?.toString();
         final endDate = endDateStr != null
-            ? DateTime.tryParse(endDateStr) ?? DateTime.now().add(const Duration(days: 30))
+            ? DateTime.tryParse(endDateStr) ??
+                  DateTime.now().add(const Duration(days: 30))
             : DateTime.now().add(const Duration(days: 30));
 
         return EventModel(
@@ -96,8 +94,11 @@ class _RoadmapPageState extends State<RoadmapPage> {
       }).toList();
       final List<dynamic> taskRes = response['tasks'] ?? [];
       _tasks = taskRes.map((row) {
-        final startDate = DateTime.tryParse(row['start_date']?.toString() ?? '') ?? DateTime.now();
-        final endDate = DateTime.tryParse(row['end_date']?.toString() ?? '') ??
+        final startDate =
+            DateTime.tryParse(row['start_date']?.toString() ?? '') ??
+            DateTime.now();
+        final endDate =
+            DateTime.tryParse(row['end_date']?.toString() ?? '') ??
             DateTime.now().add(const Duration(days: 7));
 
         return RoadmapTask(
@@ -113,22 +114,25 @@ class _RoadmapPageState extends State<RoadmapPage> {
       }).toList();
 
       if (_tasks.isNotEmpty) {
-        final earliest = _tasks.map((t) => t.start).reduce((a, b) => a.isBefore(b) ? a : b);
+        final earliest = _tasks
+            .map((t) => t.start)
+            .reduce((a, b) => a.isBefore(b) ? a : b);
         _viewStartDate = earliest.subtract(const Duration(days: 14));
       }
 
-      print('[Roadmap] projects=${_projects.length} tasks=${_tasks.length} viewStart=$_viewStartDate');
+      print(
+        '[Roadmap] projects=${_projects.length} tasks=${_tasks.length} viewStart=$_viewStartDate',
+      );
     } catch (e) {
       print('[Roadmap] fetch error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error fetch roadmap: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error fetch roadmap: $e')));
       }
     }
     setState(() => _isLoading = false);
   }
-
 
   Color _getTaskColor(RoadmapTask t) {
     if (t.status == 'Done') return Colors.green;
@@ -137,7 +141,7 @@ class _RoadmapPageState extends State<RoadmapPage> {
     return Colors.purple.shade300;
   }
 
-  // DIALOG: ADD / EDIT TASK 
+  // DIALOG: ADD / EDIT TASK
   void _showTaskDialog({RoadmapTask? task}) {
     final isEdit = task != null;
     final title = TextEditingController(text: isEdit ? task.title : "");
@@ -308,7 +312,7 @@ class _RoadmapPageState extends State<RoadmapPage> {
               onPressed: () async {
                 try {
                   final Map<String, dynamic> taskPayload = {
-                    if (isEdit) 'id': task.id, 
+                    if (isEdit) 'id': task.id,
                     'project_id': selectedProjId,
                     'title': title.text,
                     'description': desc.text,
@@ -342,6 +346,12 @@ class _RoadmapPageState extends State<RoadmapPage> {
   Widget build(BuildContext context) {
     if (_isLoading)
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    final screenWidth = MediaQuery.of(context).size.width;
+    final double leftColumnWidth = screenWidth > 600
+        ? 250.0
+        : screenWidth * 0.35;
+    final double titleFontSize = screenWidth > 600 ? 13.0 : 10.0;
+    final double headerFontSize = screenWidth > 600 ? 11.0 : 9.0;
 
     List<RoadmapRow> rows = [];
     if (_filter == "All") {
@@ -405,7 +415,8 @@ class _RoadmapPageState extends State<RoadmapPage> {
           Row(
             children: [
               Container(
-                width: 250,
+                width:
+                    leftColumnWidth,
                 height: 40,
                 alignment: Alignment.centerLeft,
                 padding: const EdgeInsets.only(left: 10),
@@ -454,7 +465,8 @@ class _RoadmapPageState extends State<RoadmapPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 250,
+                    width:
+                        leftColumnWidth,
                     decoration: BoxDecoration(
                       border: Border(
                         right: BorderSide(color: Colors.grey.shade300),
@@ -478,7 +490,7 @@ class _RoadmapPageState extends State<RoadmapPage> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: headerFontSize,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.indigo.shade700,
                                 letterSpacing: 0.5,
@@ -493,8 +505,8 @@ class _RoadmapPageState extends State<RoadmapPage> {
                               height: _rowHeight,
                               alignment: Alignment.centerLeft,
                               padding: const EdgeInsets.only(
-                                left: 20,
-                                right: 10,
+                                left: 10,
+                                right: 5,
                               ),
                               decoration: BoxDecoration(
                                 border: Border(
@@ -510,13 +522,15 @@ class _RoadmapPageState extends State<RoadmapPage> {
                                       t.title,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontSize: 13),
+                                      style: TextStyle(
+                                        fontSize: titleFontSize,
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: 4),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
+                                      horizontal: 6,
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
@@ -527,7 +541,7 @@ class _RoadmapPageState extends State<RoadmapPage> {
                                       "${(t.progress * 100).toInt()}%",
                                       style: const TextStyle(
                                         color: Colors.white,
-                                        fontSize: 10,
+                                        fontSize: 9,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -581,9 +595,20 @@ class _RoadmapPageState extends State<RoadmapPage> {
                                 final rawOffset =
                                     t.start.difference(_viewStartDate).inDays *
                                     _dayWidth;
-                                final startOffset = rawOffset.clamp(0.0, double.infinity);
-                                final rawWidth = t.end.difference(t.start).inDays * _dayWidth;
-                                final clippedWidth = (rawWidth + rawOffset.clamp(double.negativeInfinity, 0.0)).clamp(_dayWidth, double.infinity);
+                                final startOffset = rawOffset.clamp(
+                                  0.0,
+                                  double.infinity,
+                                );
+                                final rawWidth =
+                                    t.end.difference(t.start).inDays *
+                                    _dayWidth;
+                                final clippedWidth =
+                                    (rawWidth +
+                                            rawOffset.clamp(
+                                              double.negativeInfinity,
+                                              0.0,
+                                            ))
+                                        .clamp(_dayWidth, double.infinity);
                                 return Positioned(
                                   top: i * _rowHeight + 12,
                                   left: startOffset,

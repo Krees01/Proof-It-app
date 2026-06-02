@@ -8,7 +8,10 @@ class ApiService {
   static Future<List<dynamic>> getProjects() async {
     try {
       final uri = Uri.parse(baseUrl);
-      final response = await http.get(uri, headers: {'Accept': 'application/json'});
+      final response = await http.get(
+        uri,
+        headers: {'Accept': 'application/json'},
+      );
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
@@ -53,7 +56,10 @@ class ApiService {
 
       final response = await http.post(
         uri,
-        headers: {"Content-Type": "application/json", "Accept": "application/json"},
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
         body: body,
       );
 
@@ -70,13 +76,13 @@ class ApiService {
   // 3. DELETE PROJECT
   static Future<bool> deleteProject(String id) async {
     try {
-      final response = await http.delete(Uri.parse('$baseUrl/projects/$id'));
-      return response.statusCode == 200;
+      final response = await http.delete(Uri.parse('$baseUrl/$id'));
+      if (response.statusCode == 200) return true;
+      print('deleteProject failed: ${response.statusCode}');
+      return false;
     } catch (e) {
       print("Error Delete: $e");
       return false;
     }
   }
 }
-
-

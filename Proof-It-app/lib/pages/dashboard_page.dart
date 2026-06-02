@@ -118,9 +118,11 @@ class _DashboardPageState extends State<DashboardPage> {
               onPressed: () async {
                 if (title.text.trim().isEmpty || desc.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Title dan Description wajib diisi!")),
+                    const SnackBar(
+                      content: Text("Title dan Description wajib diisi!"),
+                    ),
                   );
-                  return; 
+                  return;
                 }
 
                 try {
@@ -454,21 +456,56 @@ class _DashboardPageState extends State<DashboardPage> {
               if (user.role != UserRole.Member)
                 IconButton(
                   icon: const Icon(Icons.delete, size: 20, color: Colors.grey),
-                  onPressed: () async {
-                    try {
-                      bool isSuccess = await ApiService.deleteProject(e.id);
-                      if (isSuccess) {
-                        _fetchProjects(); 
-                      } else {
-                        throw Exception("Gagal menghapus di server");
-                      }
-                    } catch (error) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Error: $error")),
-                        );
-                      }
-                    }
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text("Hapus Proyek"),
+                        content: Text(
+                          "Apakah Anda yakin ingin menghapus proyek '${e.title}'? Tindakan ini tidak dapat dibatalkan.",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text("Batal"),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              Navigator.pop(ctx);
+                              try {
+                                bool isSuccess = await ApiService.deleteProject(
+                                  e.id,
+                                );
+                                if (isSuccess) {
+                                  _fetchProjects();
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "Proyek berhasil dihapus.",
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                } else {
+                                  throw Exception("Gagal menghapus di server");
+                                }
+                              } catch (error) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text("Error: $error")),
+                                  );
+                                }
+                              }
+                            },
+                            child: const Text(
+                              "Hapus",
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
                   },
                 ),
             ],
